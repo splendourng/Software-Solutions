@@ -226,7 +226,7 @@
     }
     async function patientDetail(id,tab=state.patientTab){
       const p=await api(`/api/patients/${encodeURIComponent(id)}`);state.patient=p?.patient||p;state.patientTab=tab;const patient=state.patient,timeline=p?.timeline||patient.timeline||[];
-      const tabs=["overview","timeline","vitals"];$("#content").innerHTML=pageHead(`<span class="detail-title"><span class="avatar">${esc(initials(patient))}</span><span>${esc(patientName(patient))}</span></span>`,`${patient.mrn||patient.patient_number||"No MRN"} · ${patient.sex||patient.gender||"Sex not recorded"}`,`<button class="btn ghost" data-action="patient-card">Print card</button><button class="btn secondary" data-action="back-patients">Back</button>`)+
+      const tabs=["overview","timeline","vitals"];$("#content").innerHTML=pageHead(patientName(patient),`${patient.mrn||patient.patient_number||"No MRN"} · ${patient.sex||patient.gender||"Sex not recorded"}`,`<button class="btn ghost" data-action="patient-card">Print card</button><button class="btn secondary" data-action="back-patients">Back</button>`)+
       `<section class="card"><div class="tabs" role="tablist">${tabs.map(t=>`<button role="tab" aria-selected="${tab===t}" class="${tab===t?"active":""}" data-action="patient-tab" data-tab="${t}">${pretty(t)}</button>`).join("")}</div><div id="patient-tab">${tab==="overview"?patientOverview(patient):tab==="timeline"?timelineView(timeline):vitalsView(patient)}</div></section>`;
     }
     function patientOverview(p){
@@ -299,7 +299,7 @@
     }
     function openDialog(title,fields,onSubmit,submit="Save"){
       const d=$("#dialog"),form=$("#dialog-form");form.innerHTML=`<div class="dialog-head"><h2 id="dialog-title">${esc(title)}</h2><button class="icon-btn" value="cancel" formmethod="dialog" aria-label="Close">×</button></div><div class="dialog-body"><div class="form-grid">${fields.map(f=>field(...f)).join("")}</div><div id="dialog-error" class="form-error" role="alert" style="margin-top:12px"></div></div><div class="dialog-foot"><button class="btn ghost" value="cancel" formmethod="dialog">Cancel</button><button class="btn" type="submit">${esc(submit)}</button></div>`;
-      form.onsubmit=async e=>{e.preventDefault();const button=form.querySelector('button[type="submit"]');button.disabled=true;try{const raw=Object.fromEntries(new FormData(form));const body=Object.fromEntries(Object.entries(raw).map(([k,v])=>[k,v===""?null:v]));await onSubmit(body);d.close();toast(`${title} saved successfully.`,"success");await renderCurrent()}catch(err){$("#dialog-error").textContent=err.message}finally{button.disabled=false}};
+      form.onsubmit=async e=>{if(e.submitter?.value==="cancel")return;e.preventDefault();const button=form.querySelector('button[type="submit"]');button.disabled=true;try{const raw=Object.fromEntries(new FormData(form));const body=Object.fromEntries(Object.entries(raw).map(([k,v])=>[k,v===""?null:v]));await onSubmit(body);d.close();toast(`${title} saved successfully.`,"success");await renderCurrent()}catch(err){$("#dialog-error").textContent=err.message}finally{button.disabled=false}};
       d.showModal();setTimeout(()=>form.querySelector("input,select,textarea")?.focus(),0);
     }
     function patientForm(){
