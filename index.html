@@ -100,7 +100,7 @@
     const formatDate = value => {
       if (!value) return "—"; const d=new Date(value); return Number.isNaN(d.valueOf()) ? esc(value) : new Intl.DateTimeFormat(undefined,{dateStyle:"medium",timeStyle:value.toString().includes("T")?"short":undefined}).format(d);
     };
-    const state={bootstrap:null,user:null,permissions:[],settings:{},view:"dashboard",data:null,loading:0,page:1,query:"",filters:{},patient:null,patientTab:"overview",socket:null};
+    const state={bootstrap:null,user:null,permissions:null,settings:{},view:"dashboard",data:null,loading:0,page:1,query:"",filters:{},patient:null,patientTab:"overview",socket:null};
     const modules=[
       {id:"dashboard",label:"Dashboard",icon:"⌂",group:"Workspace",perm:null},
       {id:"patients",label:"Patients",icon:"♙",group:"Care",perm:"patients.view"},
@@ -132,7 +132,7 @@
     function permission(name){
       if(!name) return true;
       const p=state.permissions;
-      if(!p || (Array.isArray(p)&&p.length===0)) return true;
+      if(p==null) return true;
       if(Array.isArray(p)) return p.includes("*")||p.includes(name)||p.includes(name.split(".")[0])||p.some(x=>x&&x.permission===name);
       return !!(p["*"]||p[name]||p[name.split(".")[0]]);
     }
@@ -175,9 +175,9 @@
     }
     async function bootstrap(){
       try{
-        const b=await api("/api/bootstrap");state.bootstrap=b||{};state.user=b?.user;state.permissions=b?.permissions||b?.user?.permissions||[];state.settings=b?.hospital_settings||b?.settings||b?.hospital||{};
+        const b=await api("/api/bootstrap");state.bootstrap=b||{};state.user=b?.user;state.permissions=b?.permissions??b?.user?.permissions??null;state.settings=b?.hospital_settings||b?.settings||b?.hospital||{};
         if(!state.user)throw Object.assign(new Error("Authentication required"),{status:401});
-        showApp();await navigate("dashboard",false);connectSocket();
+        showApp();await navigate(state.view,false);connectSocket();
       }catch(err){if(err.status===401||err.status===403)showLogin();else{showLogin();$("#login-error").textContent="Unable to reach the EHR service. You can retry signing in."}}
     }
     function showLogin(){$("#app").classList.add("hidden");$("#login").classList.remove("hidden")}
@@ -240,9 +240,9 @@
       $("#content").innerHTML=pageHead("Clinical Workspace","Open a patient record to review history and record observations.")+`<section class="card"><form id="clinical-search" class="toolbar"><label class="search">Find patient<input name="search" value="${esc(state.query)}" placeholder="Name or MRN"></label><button class="btn secondary">Search</button></form>${rows.length?table(rows,["mrn","first_name","last_name","date_of_birth","sex"],"clinical-patient"):empty("No patients found","Try another name or medical record number.")}${pagination(data,rows.length)}</section>`;
     }
     async function admissions(){
-      const [admissionsData,bedsData]=await Promise.all([api("/api/admissions").catch(()=>({data:[]})),api("/api/beds")]);const a=records(admissionsData),beds=records(bedsData);
+      const [admissionsData,bedsData,wardsData,departmentsData]=await Promise.all([api("/api/admissions").catch(()=>({data:[]})),api("/api/beds"),api("/api/wards"),api("/api/departments")]);const a=records(admissionsData),beds=records(bedsData),wards=records(wardsData),departments=records(departmentsData);
       $("#content").innerHTML=pageHead("Admissions & Bed Board","Live inpatient placement and admission workflow.",permission("admissions.create")?'<button class="btn" data-action="new-admission">＋ Admit patient</button>':"")+
-      `<section class="grid two-col"><article class="card"><h3>Bed board</h3>${beds.length?`<div class="bed-board">${beds.map(b=>`<button class="bed ${esc((b.status||"available").toLowerCase())}" data-action="bed" data-id="${esc(b.id)}"><strong>${esc(b.name||b.bed_number||`Bed ${b.id}`)}</strong><small>${esc(b.ward_name||b.ward?.name||"")}</small><small>${pretty(b.status||"available")}</small></button>`).join("")}</div>`:empty("No beds returned","Bed inventory is not available.")}</article><article class="card"><h3>Current admissions</h3>${a.length?table(a,["patient_name","admission_number","ward_name","bed_number","status"],"admission"):empty("No active admissions","There are no admissions to display.")}</article></section>`;
+      `<section class="grid two-col"><article class="card"><h3>Bed board</h3><p style="color:var(--muted);font-size:.8rem">${wards.length} wards · ${departments.length} departments</p>${beds.length?`<div class="bed-board">${beds.map(b=>`<div class="bed ${esc((b.status||"available").toLowerCase())}"><strong>${esc(b.name||b.bed_number||`Bed ${b.id}`)}</strong><small>${esc(b.ward_name||b.ward?.name||"")}</small><small>${pretty(b.status||"available")}</small></div>`).join("")}</div>`:empty("No beds returned","Bed inventory is not available.")}</article><article class="card"><h3>Current admissions</h3>${a.length?table(a,["patient_name","admission_number","ward_name","bed_number","status"],"admission"):empty("No active admissions","There are no admissions to display.")}</article></section>`;
     }
     async function generic(cfg){
       if(!cfg)throw new Error("This module is not configured.");const params=new URLSearchParams({page:state.page,search:state.query});const data=await api(`${cfg.endpoint}?${params}`),rows=records(data);state.data=data;
