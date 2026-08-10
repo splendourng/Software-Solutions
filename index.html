@@ -1,0 +1,360 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+  <meta name="theme-color" content="#075985">
+  <title>Splendour Advanced EHR</title>
+  <style>
+    :root{
+      --primary:#075985;--primary-2:#0e7490;--accent:#14b8a6;--danger:#dc2626;
+      --warning:#d97706;--success:#15803d;--ink:#172033;--muted:#64748b;
+      --bg:#f3f7fa;--surface:#fff;--line:#dce5ec;--soft:#eaf3f7;
+      --radius:16px;--shadow:0 12px 35px rgba(15,50,70,.09);
+      --sidebar:272px;--font:Inter,ui-sans-serif,system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif
+    }
+    *{box-sizing:border-box}html{height:100%;color-scheme:light}body{margin:0;min-height:100%;font-family:var(--font);color:var(--ink);background:var(--bg)}
+    button,input,select,textarea{font:inherit}button,a{touch-action:manipulation}button{cursor:pointer}
+    :focus-visible{outline:3px solid color-mix(in srgb,var(--accent),white 25%);outline-offset:2px}
+    .hidden,[hidden]{display:none!important}.sr-only{position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap;border:0}
+    .login-shell{min-height:100vh;display:grid;grid-template-columns:minmax(340px,1fr) minmax(380px,520px)}
+    .login-art{padding:clamp(36px,7vw,100px);display:flex;flex-direction:column;justify-content:center;color:#fff;background:radial-gradient(circle at 15% 10%,rgba(45,212,191,.35),transparent 33%),linear-gradient(145deg,var(--primary),#083344)}
+    .login-art h1{font-size:clamp(2.5rem,5vw,5.4rem);line-height:.95;max-width:820px;margin:28px 0}.login-art p{font-size:1.1rem;max-width:600px;color:#d8f4f3}
+    .brand{display:flex;align-items:center;gap:12px;font-weight:800;letter-spacing:-.02em}.brand-mark{width:42px;height:42px;display:grid;place-items:center;border-radius:13px;background:linear-gradient(140deg,var(--accent),var(--primary-2));color:#fff;box-shadow:0 7px 18px rgba(20,184,166,.25)}
+    .login-panel{display:grid;place-items:center;padding:30px;background:var(--surface)}.login-card{width:min(100%,390px)}.login-card h2{font-size:2rem;margin:0 0 8px}.login-card>p{color:var(--muted);margin:0 0 30px}
+    label{display:grid;gap:7px;font-size:.88rem;font-weight:700;color:#334155}.field{margin-bottom:16px}
+    input,select,textarea{width:100%;min-height:44px;border:1px solid var(--line);border-radius:10px;background:#fff;color:var(--ink);padding:10px 12px;transition:border-color .15s,box-shadow .15s}textarea{min-height:92px;resize:vertical}
+    input:focus,select:focus,textarea:focus{border-color:var(--primary-2);box-shadow:0 0 0 3px rgba(14,116,144,.1);outline:0}
+    .btn{min-height:42px;border:1px solid transparent;border-radius:10px;padding:9px 15px;font-weight:750;display:inline-flex;align-items:center;justify-content:center;gap:8px;background:var(--primary);color:#fff;text-decoration:none}
+    .btn:hover{filter:brightness(.96)}.btn:disabled{opacity:.5;cursor:not-allowed}.btn.secondary{color:var(--primary);background:var(--soft);border-color:#cfe2ea}.btn.ghost{color:var(--ink);background:#fff;border-color:var(--line)}.btn.danger{background:var(--danger)}.btn.small{min-height:34px;padding:6px 10px;font-size:.8rem}.login-card .btn{width:100%;margin-top:8px}
+    .form-error{color:var(--danger);font-size:.86rem;min-height:1.3em}.app{min-height:100vh}.sidebar{position:fixed;inset:0 auto 0 0;width:var(--sidebar);z-index:30;background:#062f3e;color:#d8e9ee;display:flex;flex-direction:column;padding:24px 14px}
+    .sidebar .brand{padding:0 10px 22px;color:#fff}.sidebar .brand small{display:block;color:#8db4c0;font-weight:600;font-size:.68rem;letter-spacing:.08em;text-transform:uppercase}
+    .nav{overflow:auto;padding:5px 0;scrollbar-width:thin}.nav-section{font-size:.65rem;text-transform:uppercase;letter-spacing:.12em;color:#759eaa;padding:18px 12px 7px;font-weight:800}
+    .nav button{border:0;width:100%;display:flex;align-items:center;gap:12px;padding:11px 12px;border-radius:10px;background:transparent;color:#bfd5dc;text-align:left;font-weight:650;margin:2px 0}
+    .nav button:hover,.nav button.active{background:rgba(255,255,255,.1);color:#fff}.nav button.active{box-shadow:inset 3px 0 var(--accent)}
+    .nav-icon{width:21px;text-align:center;font-style:normal}.sidebar-user{margin-top:auto;border-top:1px solid rgba(255,255,255,.1);padding:18px 10px 0;display:flex;gap:10px;align-items:center}.avatar{width:38px;height:38px;flex:0 0 auto;border-radius:50%;background:var(--accent);color:#07323e;display:grid;place-items:center;font-weight:850}.sidebar-user strong,.sidebar-user small{display:block;max-width:150px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.sidebar-user small{color:#8eb3bd}
+    .shell{margin-left:var(--sidebar);min-height:100vh}.topbar{height:72px;position:sticky;top:0;z-index:20;display:flex;align-items:center;gap:12px;padding:0 clamp(16px,3vw,38px);background:rgba(255,255,255,.92);backdrop-filter:blur(14px);border-bottom:1px solid var(--line)}
+    .topbar h1{font-size:1.05rem;margin:0}.top-spacer{flex:1}.icon-btn{width:40px;height:40px;border:1px solid var(--line);border-radius:11px;background:#fff;color:var(--ink);display:grid;place-items:center;position:relative}.badge{position:absolute;right:-4px;top:-5px;min-width:18px;height:18px;padding:0 4px;background:var(--danger);color:#fff;border-radius:20px;font-size:.67rem;display:grid;place-items:center}
+    .menu-toggle{display:none}.connection{font-size:.76rem;color:var(--muted);display:flex;align-items:center;gap:6px}.dot{width:8px;height:8px;border-radius:50%;background:var(--success)}.offline .dot{background:var(--warning)}
+    main{padding:clamp(18px,3vw,38px);max-width:1720px;margin:auto}.page-head{display:flex;align-items:flex-start;justify-content:space-between;gap:18px;margin-bottom:26px}.page-head h2{font-size:clamp(1.55rem,2.6vw,2.25rem);letter-spacing:-.035em;margin:0 0 5px}.page-head p{margin:0;color:var(--muted)}
+    .actions{display:flex;align-items:center;gap:8px;flex-wrap:wrap}.grid{display:grid;gap:18px}.metrics{grid-template-columns:repeat(auto-fit,minmax(190px,1fr));margin-bottom:18px}.metric,.card{background:var(--surface);border:1px solid var(--line);border-radius:var(--radius);box-shadow:var(--shadow)}.metric{padding:20px;min-height:130px}.metric small{color:var(--muted);font-weight:700;text-transform:capitalize}.metric strong{font-size:2rem;display:block;margin:14px 0 3px;letter-spacing:-.04em}.metric span{font-size:.8rem;color:var(--muted)}
+    .card{padding:20px}.card h3{margin:0 0 16px;font-size:1rem}.two-col{grid-template-columns:minmax(0,1.4fr) minmax(280px,.7fr)}.toolbar{display:flex;gap:10px;align-items:end;flex-wrap:wrap;margin-bottom:18px}.toolbar label{min-width:160px;flex:1}.toolbar .search{flex:2;min-width:220px}
+    .table-wrap{overflow:auto;border:1px solid var(--line);border-radius:12px;background:#fff}.data-table{width:100%;border-collapse:collapse;font-size:.86rem}.data-table th{background:#f7fafb;color:#536476;text-transform:uppercase;letter-spacing:.055em;font-size:.68rem;text-align:left;padding:12px 14px;white-space:nowrap}.data-table td{padding:13px 14px;border-top:1px solid var(--line);vertical-align:middle;max-width:340px}.data-table tr:hover td{background:#fbfdfd}.data-table button.link{border:0;background:transparent;color:var(--primary-2);font-weight:750;padding:0;text-align:left}.empty{padding:46px 20px;text-align:center;color:var(--muted)}.empty b{display:block;color:var(--ink);margin-bottom:7px}
+    .status{display:inline-block;border-radius:20px;padding:4px 8px;font-size:.7rem;font-weight:800;text-transform:capitalize;background:#edf2f7;color:#475569}.status.active,.status.completed,.status.available,.status.paid,.status.dispensed{background:#dcfce7;color:#166534}.status.pending,.status.waiting,.status.occupied{background:#fef3c7;color:#92400e}.status.cancelled,.status.critical,.status.overdue,.status.discharged{background:#fee2e2;color:#991b1b}
+    .pagination{display:flex;justify-content:flex-end;gap:8px;align-items:center;margin-top:16px;color:var(--muted);font-size:.82rem}.pagination button{border:1px solid var(--line);background:#fff;border-radius:8px;padding:7px 11px}
+    dialog{border:0;padding:0;border-radius:18px;width:min(660px,calc(100% - 28px));max-height:90vh;color:var(--ink);box-shadow:0 30px 90px rgba(2,32,44,.3)}dialog::backdrop{background:rgba(2,23,35,.62);backdrop-filter:blur(3px)}.dialog-head,.dialog-foot{padding:18px 22px;display:flex;align-items:center;justify-content:space-between;gap:12px;border-bottom:1px solid var(--line)}.dialog-head h2{font-size:1.2rem;margin:0}.dialog-body{padding:22px;overflow:auto;max-height:calc(90vh - 140px)}.dialog-foot{border-top:1px solid var(--line);border-bottom:0;justify-content:flex-end}.form-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:15px}.form-grid .wide{grid-column:1/-1}
+    .tabs{display:flex;gap:5px;overflow:auto;border-bottom:1px solid var(--line);margin:0 0 20px}.tabs button{border:0;border-bottom:3px solid transparent;background:transparent;padding:11px 14px;color:var(--muted);font-weight:700;white-space:nowrap}.tabs button.active{color:var(--primary);border-color:var(--accent)}.detail-title{display:flex;align-items:center;gap:16px}.detail-title .avatar{width:52px;height:52px}.definition{display:grid;grid-template-columns:repeat(auto-fit,minmax(145px,1fr));gap:18px}.definition dt{font-size:.7rem;color:var(--muted);font-weight:750;text-transform:uppercase}.definition dd{margin:5px 0 0;font-weight:650}.timeline{list-style:none;padding:0;margin:0 0 0 8px;border-left:2px solid var(--line)}.timeline li{margin:0 0 20px;padding-left:23px;position:relative}.timeline li:before{content:"";position:absolute;left:-7px;top:3px;width:10px;height:10px;border-radius:50%;background:var(--accent);border:2px solid #fff}.timeline time{font-size:.75rem;color:var(--muted)}.timeline p{margin:4px 0}.bed-board{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:12px}.bed{border:1px solid var(--line);background:#fff;padding:15px;border-radius:12px}.bed.occupied{border-left:4px solid var(--warning)}.bed.available{border-left:4px solid var(--success)}.bed strong,.bed small{display:block}.bed small{color:var(--muted);margin-top:5px}
+    .toast-region{position:fixed;z-index:100;right:18px;bottom:18px;display:grid;gap:9px;max-width:min(390px,calc(100vw - 36px))}.toast{background:#102f3a;color:#fff;padding:13px 16px;border-radius:11px;box-shadow:var(--shadow);animation:slide .2s ease}.toast.error{background:#7f1d1d}.toast.success{background:#14532d}.loader{height:3px;position:fixed;z-index:101;left:0;right:0;top:0;background:linear-gradient(90deg,var(--accent),var(--primary));animation:load 1s infinite alternate}.error-panel{padding:20px;border:1px solid #fecaca;background:#fff1f2;color:#991b1b;border-radius:12px}.skeleton{height:120px;border-radius:15px;background:linear-gradient(90deg,#e7eef2 25%,#f5f8fa 50%,#e7eef2 75%);background-size:200% 100%;animation:shimmer 1.3s infinite}
+    @keyframes load{from{transform:scaleX(.15);transform-origin:left}to{transform:scaleX(.85);transform-origin:left}}@keyframes slide{from{opacity:0;transform:translateY(8px)}}@keyframes shimmer{to{background-position:-200% 0}}
+    @media(max-width:960px){.login-shell{grid-template-columns:1fr}.login-art{display:none}.sidebar{transform:translateX(-101%);transition:transform .2s ease}.sidebar.open{transform:none;box-shadow:20px 0 50px rgba(0,0,0,.25)}.shell{margin-left:0}.menu-toggle{display:grid}.two-col{grid-template-columns:1fr}.nav-shade{position:fixed;z-index:29;inset:0;background:rgba(2,22,31,.4)}}
+    @media(max-width:600px){.topbar{height:62px}.connection{display:none}main{padding:18px 13px}.page-head{display:block}.page-head .actions{margin-top:14px}.card{padding:14px}.form-grid{grid-template-columns:1fr}.form-grid .wide{grid-column:auto}.data-table th,.data-table td{padding:11px 10px}.login-panel{padding:20px}.metrics{grid-template-columns:1fr 1fr}.metric{min-height:110px;padding:15px}.metric strong{font-size:1.55rem}}
+    @media(prefers-reduced-motion:reduce){*,*:before,*:after{animation-duration:.01ms!important;animation-iteration-count:1!important;scroll-behavior:auto!important;transition-duration:.01ms!important}}
+  </style>
+</head>
+<body>
+  <div id="loader" class="loader hidden" role="progressbar" aria-label="Loading"></div>
+  <section id="login" class="login-shell hidden" aria-labelledby="login-title">
+    <div class="login-art">
+      <div class="brand"><span class="brand-mark" aria-hidden="true">S+</span> Splendour Advanced EHR</div>
+      <h1>Connected care.<br>Clear decisions.</h1>
+      <p>A secure clinical workspace built around patients, teams, and better outcomes.</p>
+    </div>
+    <div class="login-panel">
+      <form id="login-form" class="login-card">
+        <div class="brand" style="margin-bottom:36px"><span class="brand-mark" aria-hidden="true">S+</span><span id="login-brand">Splendour EHR</span></div>
+        <h2 id="login-title">Welcome back</h2><p>Sign in with your hospital account.</p>
+        <label class="field">Email address<input name="email" type="email" autocomplete="username" required autofocus></label>
+        <label class="field">Password<input name="password" type="password" autocomplete="current-password" required></label>
+        <div id="login-error" class="form-error" role="alert"></div>
+        <button class="btn" type="submit">Sign in securely</button>
+      </form>
+    </div>
+  </section>
+  <div id="app" class="app hidden">
+    <div id="nav-shade" class="nav-shade hidden"></div>
+    <aside id="sidebar" class="sidebar" aria-label="Primary navigation">
+      <div class="brand"><span class="brand-mark" aria-hidden="true">S+</span><span><span id="brand-name">Splendour EHR</span><small id="facility-name">Clinical workspace</small></span></div>
+      <nav id="nav" class="nav"></nav>
+      <div class="sidebar-user"><div id="user-avatar" class="avatar">U</div><div><strong id="user-name"></strong><small id="user-role"></small></div></div>
+    </aside>
+    <div class="shell">
+      <header class="topbar">
+        <button id="menu-toggle" class="icon-btn menu-toggle" aria-label="Open navigation" aria-expanded="false">☰</button>
+        <h1 id="top-title">Dashboard</h1><span class="top-spacer"></span>
+        <span id="connection" class="connection"><i class="dot"></i><span>Connected</span></span>
+        <button id="notifications-btn" class="icon-btn" aria-label="Notifications">♢<span id="notification-badge" class="badge hidden">0</span></button>
+        <button id="logout-btn" class="icon-btn" aria-label="Sign out">↪</button>
+      </header>
+      <main id="content" tabindex="-1"></main>
+    </div>
+  </div>
+  <dialog id="dialog" aria-labelledby="dialog-title"><form id="dialog-form" method="dialog"></form></dialog>
+  <div id="toasts" class="toast-region" aria-live="polite"></div>
+  <script src="/socket.io/socket.io.js"></script>
+  <script>
+  (() => {
+    "use strict";
+    const $ = (s, root=document) => root.querySelector(s);
+    const esc = value => String(value ?? "").replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;","'":"&#39;"}[c]));
+    const pretty = value => String(value ?? "").replace(/[_-]+/g," ").replace(/\b\w/g,c=>c.toUpperCase());
+    const formatDate = value => {
+      if (!value) return "—"; const d=new Date(value); return Number.isNaN(d.valueOf()) ? esc(value) : new Intl.DateTimeFormat(undefined,{dateStyle:"medium",timeStyle:value.toString().includes("T")?"short":undefined}).format(d);
+    };
+    const state={bootstrap:null,user:null,permissions:[],settings:{},view:"dashboard",data:null,loading:0,page:1,query:"",filters:{},patient:null,patientTab:"overview",socket:null};
+    const modules=[
+      {id:"dashboard",label:"Dashboard",icon:"⌂",group:"Workspace",perm:null},
+      {id:"patients",label:"Patients",icon:"♙",group:"Care",perm:"patients.view"},
+      {id:"clinical",label:"Clinical",icon:"✚",group:"Care",perm:"clinical.view"},
+      {id:"admissions",label:"Admissions & Beds",icon:"▦",group:"Care",perm:"admissions.view"},
+      {id:"nursing",label:"Nursing",icon:"♡",group:"Care",perm:"nursing.view"},
+      {id:"laboratory",label:"Laboratory",icon:"⚗",group:"Diagnostics",perm:"laboratory.view"},
+      {id:"pharmacy",label:"Pharmacy",icon:"▰",group:"Diagnostics",perm:"pharmacy.view"},
+      {id:"radiology",label:"Radiology",icon:"◉",group:"Diagnostics",perm:"radiology.view"},
+      {id:"appointments",label:"Appointments",icon:"◫",group:"Operations",perm:"appointments.view"},
+      {id:"staff",label:"Staff",icon:"♟",group:"Operations",perm:"staff.view"},
+      {id:"tasks",label:"Tasks",icon:"✓",group:"Collaboration",perm:"tasks.view"},
+      {id:"messages",label:"Messaging",icon:"✉",group:"Collaboration",perm:"messages.view"},
+      {id:"notifications",label:"Notifications",icon:"♢",group:"Collaboration",perm:"notifications.view"},
+      {id:"reports",label:"Reports",icon:"↗",group:"Governance",perm:"reports.view"},
+      {id:"audit",label:"Audit Log",icon:"◎",group:"Governance",perm:"audit.view"},
+      {id:"settings",label:"Central Admin",icon:"⚙",group:"Governance",perm:"settings.manage"}
+    ];
+    const configs={
+      nursing:{title:"Nursing Notes",description:"Review and record nursing observations.",endpoint:"/api/nursing/notes",create:"New nursing note",fields:[["patient_id","Patient ID","number",true],["note_type","Note type","text",true],["note","Clinical note","textarea",true]]},
+      laboratory:{title:"Laboratory",description:"Manage test requests, processing status, and verified results.",endpoint:"/api/laboratory/requests",create:"New lab request",fields:[["patient_id","Patient ID","number",true],["test_name","Test name","text",true],["priority","Priority","select",true,["routine","urgent","stat"]],["clinical_notes","Clinical notes","textarea",false]]},
+      pharmacy:{title:"Pharmacy",description:"Review prescriptions and record medication dispensing.",endpoint:"/api/prescriptions",create:"New prescription",fields:[["patient_id","Patient ID","number",true],["medication","Medication","text",true],["dosage","Dosage","text",true],["frequency","Frequency","text",true],["duration","Duration","text",true],["instructions","Instructions","textarea",false]]},
+      radiology:{title:"Radiology",description:"Coordinate imaging requests across care teams.",endpoint:"/api/radiology/requests",create:"New imaging request",fields:[["patient_id","Patient ID","number",true],["modality","Modality","text",true],["study","Study","text",true],["priority","Priority","select",true,["routine","urgent","stat"]],["clinical_notes","Clinical notes","textarea",false]]},
+      appointments:{title:"Appointments",description:"Schedule and manage patient visits.",endpoint:"/api/appointments",create:"New appointment",fields:[["patient_id","Patient ID","number",true],["staff_id","Clinician ID","number",true],["scheduled_at","Date and time","datetime-local",true],["type","Visit type","text",true],["reason","Reason","textarea",false]]},
+      tasks:{title:"Tasks",description:"Coordinate accountable work across departments.",endpoint:"/api/tasks",create:"New task",fields:[["title","Task title","text",true],["assignee_id","Assignee ID","number",false],["priority","Priority","select",true,["low","normal","high","urgent"]],["due_at","Due date","datetime-local",false],["description","Description","textarea",false]]},
+      messages:{title:"Messaging",description:"Secure cross-department communication.",endpoint:"/api/messages",create:"New message",fields:[["recipient_id","Recipient ID","number",true],["subject","Subject","text",true],["body","Message","textarea",true]]},
+      staff:{title:"Staff Directory",description:"Manage clinicians and operational staff.",endpoint:"/api/staff",create:"Add staff member",fields:[["first_name","First name","text",true],["last_name","Last name","text",true],["email","Email","email",true],["role","Role","text",true],["department_id","Department ID","number",false]]}
+    };
+    function permission(name){
+      if(!name) return true;
+      const p=state.permissions;
+      if(!p || (Array.isArray(p)&&p.length===0)) return true;
+      if(Array.isArray(p)) return p.includes("*")||p.includes(name)||p.includes(name.split(".")[0])||p.some(x=>x&&x.permission===name);
+      return !!(p["*"]||p[name]||p[name.split(".")[0]]);
+    }
+    function cookie(name){return document.cookie.split("; ").find(x=>x.startsWith(name+"="))?.split("=").slice(1).join("=");}
+    async function api(path,options={}){
+      const controller=new AbortController(), timer=setTimeout(()=>controller.abort(),20000); state.loading++; $("#loader").classList.remove("hidden");
+      const csrf=cookie("csrf_token")||cookie("XSRF-TOKEN")||cookie("csrf");
+      try{
+        const headers={Accept:"application/json",...(options.body?{"Content-Type":"application/json"}:{}),...(csrf?{"X-CSRF-Token":decodeURIComponent(csrf),"X-XSRF-TOKEN":decodeURIComponent(csrf)}:{}),...(options.headers||{})};
+        const response=await fetch(path,{credentials:"same-origin",...options,headers,signal:controller.signal});
+        const type=response.headers.get("content-type")||""; const body=response.status===204?null:type.includes("json")?await response.json():await response.text();
+        if(!response.ok){const err=new Error(body?.message||body?.error||`${response.status} ${response.statusText}`);err.status=response.status;err.body=body;throw err}
+        return body;
+      }catch(err){if(err.name==="AbortError") throw new Error("The request timed out. Check your connection and try again.");throw err}
+      finally{clearTimeout(timer);if(!--state.loading)$("#loader").classList.add("hidden")}
+    }
+    function records(payload){
+      if(Array.isArray(payload))return payload;
+      for(const key of ["data","items","results","patients","requests","prescriptions","appointments","tasks","messages","notifications","staff","notes","audit","beds","admissions"]) if(Array.isArray(payload?.[key]))return payload[key];
+      return [];
+    }
+    function toast(message,type=""){const el=document.createElement("div");el.className=`toast ${type}`;el.textContent=message;$("#toasts").append(el);setTimeout(()=>el.remove(),5000)}
+    function initials(user){return ((user?.first_name?.[0]||user?.name?.[0]||"U")+(user?.last_name?.[0]||"")).toUpperCase()}
+    function applyBranding(){
+      const s=state.settings||{}, root=document.documentElement;
+      const primary=s.primary_color||s.branding?.primary_color, accent=s.accent_color||s.branding?.accent_color;
+      if(/^#[0-9a-f]{6}$/i.test(primary||""))root.style.setProperty("--primary",primary);
+      if(/^#[0-9a-f]{6}$/i.test(accent||""))root.style.setProperty("--accent",accent);
+      const name=s.hospital_name||s.name||state.bootstrap?.hospital?.name||"Splendour EHR";
+      $("#brand-name").textContent=name;$("#login-brand").textContent=name;$("#facility-name").textContent=s.facility_name||s.branch_name||"Clinical workspace";document.title=`${name} · Advanced EHR`;
+    }
+    function navMetadata(){
+      const supplied=state.bootstrap?.navigation;
+      if(!Array.isArray(supplied))return null;
+      return new Set(supplied.filter(x=>x?.enabled!==false).map(x=>x.id||x.key||x.module));
+    }
+    function renderNav(){
+      const meta=navMetadata(), visible=modules.filter(m=>permission(m.perm)&&(!meta||meta.has(m.id)||m.id==="dashboard"));let group="";
+      $("#nav").innerHTML=visible.map(m=>`${m.group!==group?`<div class="nav-section">${esc(group=m.group)}</div>`:""}<button data-view="${m.id}" class="${state.view===m.id?"active":""}" ${state.view===m.id?'aria-current="page"':""}><i class="nav-icon" aria-hidden="true">${m.icon}</i>${esc(m.label)}</button>`).join("");
+    }
+    async function bootstrap(){
+      try{
+        const b=await api("/api/bootstrap");state.bootstrap=b||{};state.user=b?.user;state.permissions=b?.permissions||b?.user?.permissions||[];state.settings=b?.hospital_settings||b?.settings||b?.hospital||{};
+        if(!state.user)throw Object.assign(new Error("Authentication required"),{status:401});
+        showApp();await navigate("dashboard",false);connectSocket();
+      }catch(err){if(err.status===401||err.status===403)showLogin();else{showLogin();$("#login-error").textContent="Unable to reach the EHR service. You can retry signing in."}}
+    }
+    function showLogin(){$("#app").classList.add("hidden");$("#login").classList.remove("hidden")}
+    function showApp(){
+      $("#login").classList.add("hidden");$("#app").classList.remove("hidden");applyBranding();
+      const u=state.user||{};$("#user-name").textContent=u.name||[u.first_name,u.last_name].filter(Boolean).join(" ")||u.email||"User";$("#user-role").textContent=pretty(u.role?.name||u.role||u.job_title||"Staff");$("#user-avatar").textContent=initials(u);renderNav();
+    }
+    async function navigate(view,push=true){
+      const mod=modules.find(m=>m.id===view);if(!mod||!permission(mod.perm)){toast("You do not have permission to open that module.","error");return}
+      state.view=view;state.page=1;state.query="";state.patient=null;renderNav();$("#top-title").textContent=mod.label;closeNav();if(push)history.pushState({view},"",`#${view}`);await renderCurrent();
+    }
+    async function renderCurrent(){
+      const c=$("#content");c.innerHTML='<div class="grid metrics"><div class="skeleton"></div><div class="skeleton"></div><div class="skeleton"></div></div>';
+      try{
+        if(state.view==="dashboard")await dashboard();
+        else if(state.view==="patients")await patients();
+        else if(state.view==="clinical")await clinical();
+        else if(state.view==="admissions")await admissions();
+        else if(state.view==="notifications")await notifications();
+        else if(state.view==="reports")await reports();
+        else if(state.view==="audit")await audit();
+        else if(state.view==="settings")await settings();
+        else await generic(configs[state.view]);
+      }catch(err){c.innerHTML=`<div class="error-panel" role="alert"><b>${esc(err.message)}</b><div style="margin-top:12px"><button class="btn small" data-action="retry">Try again</button></div></div>`}
+      c.focus({preventScroll:true});
+    }
+    function pageHead(title,description,actions=""){return `<header class="page-head"><div><h2>${esc(title)}</h2><p>${esc(description)}</p></div><div class="actions">${actions}</div></header>`}
+    function scalarMetrics(data){
+      const source=data?.metrics||data?.summary||data?.stats||data||{};
+      return Object.entries(source).filter(([,v])=>["number","string"].includes(typeof v)&&v!==""&&v!=null).slice(0,8);
+    }
+    async function dashboard(){
+      const data=await api("/api/dashboard"), metrics=scalarMetrics(data);
+      const lists=Object.entries(data||{}).filter(([,v])=>Array.isArray(v)&&v.length).slice(0,3);
+      $("#content").innerHTML=pageHead(`Good ${new Date().getHours()<12?"morning":new Date().getHours()<18?"afternoon":"evening"}`,`${state.user?.first_name||state.user?.name||"Clinician"} · ${formatDate(new Date())}`)+
+        (metrics.length?`<section class="grid metrics" aria-label="Dashboard metrics">${metrics.map(([k,v])=>`<article class="metric"><small>${esc(pretty(k))}</small><strong>${esc(v)}</strong><span>Live hospital data</span></article>`).join("")}</section>`:`<div class="card empty"><b>No dashboard metrics returned</b>Your role dashboard has no metrics available.</div>`)+
+        `<section class="grid ${lists.length>1?"two-col":""}">${lists.map(([key,val])=>`<article class="card"><h3>${esc(pretty(key))}</h3>${table(val.slice(0,8))}</article>`).join("")}</section>`;
+    }
+    function patientName(p){return p.name||p.full_name||[p.first_name,p.middle_name,p.last_name].filter(Boolean).join(" ")||`Patient ${p.id||""}`}
+    async function patients(){
+      const params=new URLSearchParams({page:state.page,search:state.query,...state.filters});const data=await api(`/api/patients?${params}`);state.data=data;const rows=records(data);
+      $("#content").innerHTML=pageHead("Patients","Search the master patient index and open longitudinal records.",permission("patients.create")?'<button class="btn" data-action="new-patient">＋ Register patient</button>':"")+
+        `<section class="card"><form class="toolbar" id="patient-search"><label class="search">Search patients<input name="search" value="${esc(state.query)}" placeholder="Name, MRN, phone…" autocomplete="off"></label><label>Sex<select name="sex"><option value="">All</option><option>Male</option><option>Female</option><option>Other</option></select></label><button class="btn secondary">Search</button></form>
+        ${rows.length?`<div class="table-wrap"><table class="data-table"><thead><tr><th>Patient</th><th>MRN</th><th>Sex</th><th>Date of birth</th><th>Phone</th><th>Status</th></tr></thead><tbody>${rows.map(p=>`<tr><td><button class="link" data-action="patient" data-id="${esc(p.id)}">${esc(patientName(p))}</button></td><td>${esc(p.mrn||p.patient_number||"—")}</td><td>${esc(p.sex||p.gender||"—")}</td><td>${formatDate(p.date_of_birth||p.dob)}</td><td>${esc(p.phone||p.phone_number||"—")}</td><td>${status(p.status||"active")}</td></tr>`).join("")}</tbody></table></div>`:empty("No patients found","Adjust your search or register a patient.")}
+        ${pagination(data,rows.length)}</section>`;
+    }
+    async function patientDetail(id,tab=state.patientTab){
+      const p=await api(`/api/patients/${encodeURIComponent(id)}`);state.patient=p?.patient||p;state.patientTab=tab;const patient=state.patient,timeline=p?.timeline||patient.timeline||[];
+      const tabs=["overview","timeline","vitals"];$("#content").innerHTML=pageHead(`<span class="detail-title"><span class="avatar">${esc(initials(patient))}</span><span>${esc(patientName(patient))}</span></span>`,`${patient.mrn||patient.patient_number||"No MRN"} · ${patient.sex||patient.gender||"Sex not recorded"}`,`<button class="btn ghost" data-action="patient-card">Print card</button><button class="btn secondary" data-action="back-patients">Back</button>`)+
+      `<section class="card"><div class="tabs" role="tablist">${tabs.map(t=>`<button role="tab" aria-selected="${tab===t}" class="${tab===t?"active":""}" data-action="patient-tab" data-tab="${t}">${pretty(t)}</button>`).join("")}</div><div id="patient-tab">${tab==="overview"?patientOverview(patient):tab==="timeline"?timelineView(timeline):vitalsView(patient)}</div></section>`;
+    }
+    function patientOverview(p){
+      const fields=[["MRN",p.mrn||p.patient_number],["Date of birth",formatDate(p.date_of_birth||p.dob)],["Sex",p.sex||p.gender],["Blood group",p.blood_group],["Phone",p.phone||p.phone_number],["Email",p.email],["Address",p.address],["Emergency contact",p.emergency_contact_name||p.emergency_contact]];
+      return `<dl class="definition">${fields.map(([k,v])=>`<div><dt>${k}</dt><dd>${esc(v||"—")}</dd></div>`).join("")}</dl>`;
+    }
+    function timelineView(items){return items.length?`<ol class="timeline">${items.map(x=>`<li><time>${formatDate(x.created_at||x.date||x.timestamp)}</time><p><b>${esc(pretty(x.type||x.event_type||"Clinical event"))}</b></p><p>${esc(x.description||x.note||x.summary||"")}</p></li>`).join("")}</ol>`:empty("No timeline events","Clinical activity will appear here when recorded.")}
+    function vitalsView(p){const v=p.vitals||p.latest_vitals;return `${v?patientOverview(v):empty("No vitals recorded","Record the first observation set.")}${permission("patients.vitals.create")?'<div style="margin-top:18px"><button class="btn" data-action="new-vitals">Record vitals</button></div>':""}`}
+    async function clinical(){
+      const data=await api(`/api/patients?page=${state.page}&search=${encodeURIComponent(state.query)}`),rows=records(data);
+      $("#content").innerHTML=pageHead("Clinical Workspace","Open a patient record to review history and record observations.")+`<section class="card"><form id="clinical-search" class="toolbar"><label class="search">Find patient<input name="search" value="${esc(state.query)}" placeholder="Name or MRN"></label><button class="btn secondary">Search</button></form>${rows.length?table(rows,["mrn","first_name","last_name","date_of_birth","sex"],"clinical-patient"):empty("No patients found","Try another name or medical record number.")}${pagination(data,rows.length)}</section>`;
+    }
+    async function admissions(){
+      const [admissionsData,bedsData]=await Promise.all([api("/api/admissions").catch(()=>({data:[]})),api("/api/beds")]);const a=records(admissionsData),beds=records(bedsData);
+      $("#content").innerHTML=pageHead("Admissions & Bed Board","Live inpatient placement and admission workflow.",permission("admissions.create")?'<button class="btn" data-action="new-admission">＋ Admit patient</button>':"")+
+      `<section class="grid two-col"><article class="card"><h3>Bed board</h3>${beds.length?`<div class="bed-board">${beds.map(b=>`<button class="bed ${esc((b.status||"available").toLowerCase())}" data-action="bed" data-id="${esc(b.id)}"><strong>${esc(b.name||b.bed_number||`Bed ${b.id}`)}</strong><small>${esc(b.ward_name||b.ward?.name||"")}</small><small>${pretty(b.status||"available")}</small></button>`).join("")}</div>`:empty("No beds returned","Bed inventory is not available.")}</article><article class="card"><h3>Current admissions</h3>${a.length?table(a,["patient_name","admission_number","ward_name","bed_number","status"],"admission"):empty("No active admissions","There are no admissions to display.")}</article></section>`;
+    }
+    async function generic(cfg){
+      if(!cfg)throw new Error("This module is not configured.");const params=new URLSearchParams({page:state.page,search:state.query});const data=await api(`${cfg.endpoint}?${params}`),rows=records(data);state.data=data;
+      $("#content").innerHTML=pageHead(cfg.title,cfg.description,permission(`${state.view}.create`)?`<button class="btn" data-action="generic-create">${esc(cfg.create)}</button>`:"")+
+      `<section class="card"><form id="generic-search" class="toolbar"><label class="search">Search<input name="search" value="${esc(state.query)}" placeholder="Search records…"></label><button class="btn secondary">Search</button></form>${rows.length?table(rows,null,state.view):empty(`No ${cfg.title.toLowerCase()} records`,`New records returned by the service will appear here.`)}${pagination(data,rows.length)}</section>`;
+    }
+    async function notifications(){
+      const data=await api(`/api/notifications?page=${state.page}`),rows=records(data);setNotificationCount(data?.unread_count??rows.filter(x=>!x.read&&!x.read_at).length);
+      $("#content").innerHTML=pageHead("Notifications","Clinical and operational updates requiring your attention.",rows.some(x=>!x.read&&!x.read_at)?'<button class="btn secondary" data-action="read-all">Mark all read</button>':"")+`<section class="card">${rows.length?table(rows,["title","message","type","created_at","read"],"notification"):empty("You're all caught up","No notifications are available.")}${pagination(data,rows.length)}</section>`;
+    }
+    async function reports(){
+      const data=await api("/api/reports/summary"),metrics=scalarMetrics(data),exports=data?.exports||data?.export_endpoints||[];
+      $("#content").innerHTML=pageHead("Reports","Operational and clinical summaries generated from hospital data.",Array.isArray(exports)?exports.map(x=>`<a class="btn secondary" href="${esc(x.url||x.href)}" target="_blank" rel="noopener">${esc(x.label||x.name||"Export")}</a>`).join(""):"")+
+      (metrics.length?`<section class="grid metrics">${metrics.map(([k,v])=>`<article class="metric"><small>${esc(pretty(k))}</small><strong>${esc(v)}</strong><span>Reporting summary</span></article>`).join("")}</section>`:empty("No report summary returned","Reporting data is not currently available."))+
+      `${Object.entries(data||{}).filter(([,v])=>Array.isArray(v)&&v.length&&v!==exports).map(([k,v])=>`<section class="card" style="margin-top:18px"><h3>${pretty(k)}</h3>${table(v)}</section>`).join("")}`;
+    }
+    async function audit(){
+      const params=new URLSearchParams({page:state.page,search:state.query});const data=await api(`/api/audit?${params}`),rows=records(data);
+      $("#content").innerHTML=pageHead("Audit Log","Immutable access and activity history for compliance review.")+`<section class="card"><form id="audit-search" class="toolbar"><label class="search">Search audit events<input name="search" value="${esc(state.query)}" placeholder="Actor, action, resource…"></label><button class="btn secondary">Search</button></form>${rows.length?table(rows):empty("No audit events found","Adjust your search criteria.")}${pagination(data,rows.length)}</section>`;
+    }
+    async function settings(){
+      const data=await api("/api/settings/hospital");state.settings=data?.settings||data||{};applyBranding();
+      const keys=Object.keys(state.settings).filter(k=>["string","number","boolean"].includes(typeof state.settings[k])&&!/id|created|updated|secret|password|token/i.test(k));
+      $("#content").innerHTML=pageHead("Central Admin Settings","Hospital identity, contact, localization, and brand configuration.")+`<form id="settings-form" class="card"><div class="form-grid">${keys.map(k=>field(k,pretty(k),typeof state.settings[k]==="boolean"?"select":k.includes("color")?"color":"text",false,typeof state.settings[k]==="boolean"?["true","false"]:null,state.settings[k])).join("")}</div><div class="actions" style="margin-top:22px"><button class="btn" type="submit">Save settings</button></div></form>`;
+    }
+    function valuesForTable(rows,preferred){
+      const blocked=/password|token|secret|hash|deleted_at/i;const source=preferred||Object.keys(rows[0]||{});
+      return source.filter(k=>!blocked.test(k)&&rows.some(r=>r?.[k]!=null)&&!rows.some(r=>typeof r?.[k]==="object")).slice(0,7);
+    }
+    function table(rows,preferred,action){
+      if(!rows?.length)return "";const keys=valuesForTable(rows,preferred);
+      return `<div class="table-wrap"><table class="data-table"><thead><tr>${keys.map(k=>`<th>${esc(pretty(k))}</th>`).join("")}${["laboratory","pharmacy","admission","notification"].includes(action)?"<th>Actions</th>":""}</tr></thead><tbody>${rows.map(r=>`<tr>${keys.map((k,i)=>`<td>${i===0&&action==="clinical-patient"?`<button class="link" data-action="patient" data-id="${esc(r.id)}">${cell(r[k],k)}</button>`:cell(r[k],k)}</td>`).join("")}${rowActions(r,action)}</tr>`).join("")}</tbody></table></div>`;
+    }
+    function cell(v,k){if(v==null||v==="")return "—";if(/status|priority|read$/i.test(k))return status(typeof v==="boolean"?(v?"read":"unread"):v);if(/date|_at$|dob/i.test(k))return formatDate(v);return esc(v)}
+    function status(v){return `<span class="status ${esc(String(v).toLowerCase().replace(/\s/g,"-"))}">${esc(pretty(v))}</span>`}
+    function rowActions(r,action){
+      let html="";
+      if(action==="laboratory"){if(permission("laboratory.update"))html+=`<button class="btn small secondary" data-action="lab-status" data-id="${esc(r.id)}">Status</button> `;if(permission("laboratory.results"))html+=`<button class="btn small ghost" data-action="lab-result" data-id="${esc(r.id)}">Results</button>`}
+      if(action==="pharmacy"&&permission("pharmacy.dispense")&&!["dispensed","completed"].includes(String(r.status).toLowerCase()))html+=`<button class="btn small secondary" data-action="dispense" data-id="${esc(r.id)}">Dispense</button>`;
+      if(action==="admission"){if(permission("admissions.transfer"))html+=`<button class="btn small secondary" data-action="transfer" data-id="${esc(r.id)}">Transfer</button> `;if(permission("admissions.discharge"))html+=`<button class="btn small ghost" data-action="discharge" data-id="${esc(r.id)}">Discharge</button>`}
+      if(action==="notification"&&!r.read&&!r.read_at)html+=`<button class="btn small secondary" data-action="read-notification" data-id="${esc(r.id)}">Mark read</button>`;
+      return html?`<td class="actions">${html}</td>`:"";
+    }
+    function pagination(data,count){
+      const p=Number(data?.page||data?.pagination?.page||state.page),last=Number(data?.total_pages||data?.pagination?.total_pages||data?.meta?.last_page||p),total=data?.total||data?.pagination?.total||data?.meta?.total;
+      return `<div class="pagination"><span>${total!=null?`${esc(total)} records · `:""}Page ${p}${last>p?` of ${last}`:""}</span><button data-action="page" data-page="${p-1}" ${p<=1?"disabled":""}>Previous</button><button data-action="page" data-page="${p+1}" ${p>=last&&count<20?"disabled":""}>Next</button></div>`;
+    }
+    function empty(title,text){return `<div class="empty"><b>${esc(title)}</b>${esc(text)}</div>`}
+    function field(name,label,type="text",required=false,options=null,value=""){
+      const req=required?"required":"",wide=type==="textarea"?"wide":"";
+      if(type==="textarea")return `<label class="${wide}">${esc(label)}<textarea name="${esc(name)}" ${req}>${esc(value)}</textarea></label>`;
+      if(type==="select")return `<label>${esc(label)}<select name="${esc(name)}" ${req}><option value="">Select…</option>${(options||[]).map(o=>`<option value="${esc(o)}" ${String(value)===String(o)?"selected":""}>${esc(pretty(o))}</option>`).join("")}</select></label>`;
+      return `<label>${esc(label)}<input name="${esc(name)}" type="${esc(type)}" value="${esc(value)}" ${req}></label>`;
+    }
+    function openDialog(title,fields,onSubmit,submit="Save"){
+      const d=$("#dialog"),form=$("#dialog-form");form.innerHTML=`<div class="dialog-head"><h2 id="dialog-title">${esc(title)}</h2><button class="icon-btn" value="cancel" formmethod="dialog" aria-label="Close">×</button></div><div class="dialog-body"><div class="form-grid">${fields.map(f=>field(...f)).join("")}</div><div id="dialog-error" class="form-error" role="alert" style="margin-top:12px"></div></div><div class="dialog-foot"><button class="btn ghost" value="cancel" formmethod="dialog">Cancel</button><button class="btn" type="submit">${esc(submit)}</button></div>`;
+      form.onsubmit=async e=>{e.preventDefault();const button=form.querySelector('button[type="submit"]');button.disabled=true;try{const raw=Object.fromEntries(new FormData(form));const body=Object.fromEntries(Object.entries(raw).map(([k,v])=>[k,v===""?null:v]));await onSubmit(body);d.close();toast(`${title} saved successfully.`,"success");await renderCurrent()}catch(err){$("#dialog-error").textContent=err.message}finally{button.disabled=false}};
+      d.showModal();setTimeout(()=>form.querySelector("input,select,textarea")?.focus(),0);
+    }
+    function patientForm(){
+      openDialog("Register patient",[["first_name","First name","text",true],["last_name","Last name","text",true],["date_of_birth","Date of birth","date",true],["sex","Sex","select",true,["male","female","other","unknown"]],["phone","Phone","tel",false],["email","Email","email",false],["address","Address","textarea",false],["emergency_contact_name","Emergency contact","text",false]],body=>api("/api/patients",{method:"POST",body:JSON.stringify(body)}),"Register");
+    }
+    function vitalsForm(){
+      openDialog("Record vitals",[["temperature","Temperature (°C)","number",false],["pulse","Pulse (bpm)","number",false],["systolic_bp","Systolic BP","number",false],["diastolic_bp","Diastolic BP","number",false],["respiratory_rate","Respiratory rate","number",false],["oxygen_saturation","Oxygen saturation (%)","number",false],["weight","Weight (kg)","number",false],["notes","Notes","textarea",false]],body=>api(`/api/patients/${encodeURIComponent(state.patient.id)}/vitals`,{method:"POST",body:JSON.stringify(body)}));
+    }
+    function admissionForm(){openDialog("Admit patient",[["patient_id","Patient ID","number",true],["ward_id","Ward ID","number",true],["bed_id","Bed ID","number",false],["admitting_diagnosis","Admitting diagnosis","textarea",true],["admitted_at","Admission date","datetime-local",false]],body=>api("/api/admissions",{method:"POST",body:JSON.stringify(body)}),"Admit")}
+    function genericCreate(){const cfg=configs[state.view];openDialog(cfg.create,cfg.fields,body=>api(cfg.endpoint,{method:"POST",body:JSON.stringify(body)}),"Create")}
+    function actionDialog(action,id){
+      if(action==="transfer")openDialog("Transfer admission",[["ward_id","Destination ward ID","number",true],["bed_id","Destination bed ID","number",true],["reason","Transfer reason","textarea",false]],b=>api(`/api/admissions/${id}/transfer`,{method:"POST",body:JSON.stringify(b)}),"Transfer");
+      if(action==="discharge")openDialog("Discharge patient",[["discharge_summary","Discharge summary","textarea",true],["disposition","Disposition","text",false],["discharged_at","Discharge date","datetime-local",false]],b=>api(`/api/admissions/${id}/discharge`,{method:"POST",body:JSON.stringify(b)}),"Discharge");
+      if(action==="lab-status")openDialog("Update laboratory status",[["status","Status","select",true,["requested","collected","processing","completed","cancelled"]],["notes","Notes","textarea",false]],b=>api(`/api/laboratory/requests/${id}/status`,{method:"PATCH",body:JSON.stringify(b)}),"Update");
+      if(action==="lab-result")openDialog("Record laboratory results",[["results","Results","textarea",true],["reference_range","Reference range","text",false],["interpretation","Interpretation","textarea",false]],b=>api(`/api/laboratory/requests/${id}/results`,{method:"POST",body:JSON.stringify(b)}),"Save results");
+      if(action==="dispense")openDialog("Dispense prescription",[["quantity","Quantity dispensed","number",true],["batch_number","Batch number","text",false],["notes","Dispensing notes","textarea",false]],b=>api(`/api/prescriptions/${id}/dispense`,{method:"POST",body:JSON.stringify(b)}),"Dispense");
+    }
+    function setNotificationCount(n){const el=$("#notification-badge"),num=Number(n)||0;el.textContent=num>99?"99+":num;el.classList.toggle("hidden",!num)}
+    function openNav(){const side=$("#sidebar");side.classList.add("open");$("#nav-shade").classList.remove("hidden");$("#menu-toggle").setAttribute("aria-expanded","true")}
+    function closeNav(){$("#sidebar").classList.remove("open");$("#nav-shade").classList.add("hidden");$("#menu-toggle").setAttribute("aria-expanded","false")}
+    function connectSocket(){
+      if(typeof window.io!=="function"){$("#connection").classList.add("offline");$("#connection span").textContent="Live updates unavailable";return}
+      state.socket=io({withCredentials:true});
+      state.socket.on("connect",()=>{$("#connection").classList.remove("offline");$("#connection span").textContent="Connected"});
+      state.socket.on("disconnect",()=>{$("#connection").classList.add("offline");$("#connection span").textContent="Reconnecting…"});
+      ["notification","notifications:new"].forEach(event=>state.socket.on(event,p=>{toast(p?.message||p?.title||"New notification");setNotificationCount(Number($("#notification-badge").textContent||0)+1);if(state.view==="notifications")renderCurrent()}));
+      ["dashboard:update","patient:update","admission:update","laboratory:update"].forEach(event=>state.socket.on(event,()=>{if(["dashboard","patients","admissions","laboratory"].includes(state.view))renderCurrent()}));
+    }
+    $("#login-form").addEventListener("submit",async e=>{e.preventDefault();const button=e.currentTarget.querySelector("button"),body=Object.fromEntries(new FormData(e.currentTarget));button.disabled=true;$("#login-error").textContent="";try{await api("/api/auth/login",{method:"POST",body:JSON.stringify(body)});await bootstrap()}catch(err){$("#login-error").textContent=err.message}finally{button.disabled=false}});
+    $("#logout-btn").addEventListener("click",async()=>{try{await api("/api/auth/logout",{method:"POST"});state.socket?.disconnect();state.user=null;showLogin();$("#login-form").reset()}catch(err){toast(err.message,"error")}});
+    $("#menu-toggle").addEventListener("click",()=>$("#sidebar").classList.contains("open")?closeNav():openNav());$("#nav-shade").addEventListener("click",closeNav);
+    $("#notifications-btn").addEventListener("click",()=>navigate("notifications"));
+    $("#nav").addEventListener("click",e=>{const b=e.target.closest("[data-view]");if(b)navigate(b.dataset.view)});
+    $("#content").addEventListener("submit",async e=>{
+      if(e.target.matches("#patient-search,#clinical-search,#generic-search,#audit-search")){e.preventDefault();state.query=new FormData(e.target).get("search")||"";state.page=1;if(e.target.id==="patient-search")state.filters.sex=new FormData(e.target).get("sex")||"";await renderCurrent()}
+      if(e.target.id==="settings-form"){e.preventDefault();const body=Object.fromEntries(new FormData(e.target));Object.keys(body).forEach(k=>{if(body[k]==="true"||body[k]==="false")body[k]=body[k]==="true"});try{await api("/api/settings/hospital",{method:"PUT",body:JSON.stringify(body)});toast("Hospital settings saved.","success");await renderCurrent()}catch(err){toast(err.message,"error")}}
+    });
+    $("#content").addEventListener("click",async e=>{
+      const b=e.target.closest("[data-action]");if(!b)return;const a=b.dataset.action,id=b.dataset.id;
+      try{
+        if(a==="retry")return renderCurrent();if(a==="new-patient")return patientForm();if(a==="generic-create")return genericCreate();if(a==="new-admission")return admissionForm();if(a==="new-vitals")return vitalsForm();
+        if(a==="patient")return patientDetail(id);if(a==="back-patients")return navigate("patients",false);if(a==="patient-tab")return patientDetail(state.patient.id,b.dataset.tab);
+        if(a==="patient-card"){window.open(`/api/patients/${encodeURIComponent(state.patient.id)}/card`,"_blank","noopener");return}
+        if(a==="page"){state.page=Number(b.dataset.page);return renderCurrent()}
+        if(["transfer","discharge","lab-status","lab-result","dispense"].includes(a))return actionDialog(a,id);
+        if(a==="read-notification"){await api(`/api/notifications`,{method:"PATCH",body:JSON.stringify({id,read:true})});toast("Notification marked as read.","success");return renderCurrent()}
+        if(a==="read-all"){await api("/api/notifications",{method:"PATCH",body:JSON.stringify({read_all:true})});toast("Notifications marked as read.","success");return renderCurrent()}
+      }catch(err){toast(err.message,"error")}
+    });
+    window.addEventListener("online",()=>{toast("Connection restored.","success");$("#connection").classList.remove("offline");renderCurrent()});
+    window.addEventListener("offline",()=>{$("#connection").classList.add("offline");$("#connection span").textContent="Offline";toast("You are offline. Changes cannot be saved.","error")});
+    window.addEventListener("popstate",e=>navigate(e.state?.view||location.hash.slice(1)||"dashboard",false));
+    document.addEventListener("keydown",e=>{if(e.key==="Escape")closeNav()});
+    const initial=location.hash.slice(1);if(initial&&modules.some(m=>m.id===initial))state.view=initial;bootstrap();
+  })();
+  </script>
+</body>
+</html>
