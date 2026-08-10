@@ -442,7 +442,7 @@ async function bootstrapOwner() {
     );
     await conn.execute(
       `INSERT INTO roles(id,code,name,system_role) VALUES(?,?,?,TRUE)
-       ON DUPLICATE KEY UPDATE id=LAST_INSERT_ID(id)`,
+       ON DUPLICATE KEY UPDATE name=VALUES(name),system_role=TRUE`,
       [roleId, 'central_administrator', 'Central Administrator']
     );
     const [[role]] = await conn.query('SELECT id FROM roles WHERE code=?', ['central_administrator']);
@@ -1262,7 +1262,7 @@ app.post('/api/documents', requirePermission('documents.manage'), upload.single(
 }));
 
 app.get('/api/documents/:id/download', requirePermission('documents.manage'), param('id').isUUID(), validate,
-  asyncRoute(async (req, res) => {
+  asyncRoute(async (req, res, next) => {
     const [rows] = await pool.execute('SELECT * FROM documents WHERE id=?', [req.params.id]);
     if (!rows.length) return fail(res, 404, 'NOT_FOUND', 'Document not found');
     const doc = rows[0];
@@ -1273,7 +1273,7 @@ app.get('/api/documents/:id/download', requirePermission('documents.manage'), pa
     res.setHeader('Content-Type', doc.mime_type);
     res.setHeader('Content-Disposition', `attachment; filename*=UTF-8''${encodeURIComponent(doc.original_name)}`);
     res.setHeader('Cache-Control', 'no-store');
-    fs.createReadStream(filePath).on('error', req.next).pipe(res);
+    fs.createReadStream(filePath).on('error', next).pipe(res);
   }));
 
 app.post('/api/invoices', requirePermission('billing.manage'), [
@@ -1418,7 +1418,105 @@ app.get('/api/dashboard', asyncRoute(async (req, res) => {
   ok(res, { openTasks: tasks[0].count, todaysAppointments: appointments[0].count, wardOccupancy: occupancy });
 }));
 
+const worklistDefinitions = {
+  appointments: {
+    permission: 'appointments.manage',
+    sql: `SELECT a.*,p.medical_record_no,CONCAT(p.first_name,' ',p.last_name) patient_name
+      FROM appointments a JOIN patients p ON p.id=a.patient_id`,
+    patient: 'patient_id', department: 'department_id', order: 'starts_at DESC'
+  },
+  encounters: {
+    permission: 'clinical.read',
+    sql: `SELECT e.*,p.medical_record_no,CONCAT(p.first_name,' ',p.last_name) patient_name
+      FROM encounters e JOIN patients p ON p.id=e.patient_id`,
+    patient: 'patient_id', department: 'department_id', order: 'started_at DESC'
+  },
+  admissions: {
+    permission: 'admissions.manage',
+    sql: `SELECT a.*,p.medical_record_no,CONCAT(p.first_name,' ',p.last_name) patient_name,w.name ward_name,
+      b.code bed_code FROM admissions a JOIN patients p ON p.id=a.patient_id JOIN wards w ON w.id=a.ward_id
+      LEFT JOIN beds b ON b.id=a.bed_id`,
+    patient: 'patient_id', ward: 'ward_id', order: 'admitted_at DESC'
+  },
+  labs: {
+    permission: 'labs.manage',
+    sql: `SELECT r.*,p.medical_record_no,CONCAT(p.first_name,' ',p.last_name) patient_name,
+      COUNT(i.id) item_count FROM lab_requests r JOIN patients p ON p.id=r.patient_id
+      LEFT JOIN lab_request_items i ON i.request_id=r.id`,
+    patient: 'patient_id', group: 'r.id', order: 'ordered_at DESC'
+  },
+  prescriptions: {
+    permission: 'pharmacy.manage',
+    sql: `SELECT r.*,p.medical_record_no,CONCAT(p.first_name,' ',p.last_name) patient_name,
+      COUNT(i.id) item_count FROM prescriptions r JOIN patients p ON p.id=r.patient_id
+      LEFT JOIN prescription_items i ON i.prescription_id=r.id`,
+    patient: 'patient_id', group: 'r.id', order: 'prescribed_at DESC'
+  },
+  invoices: {
+    permission: 'billing.manage',
+    sql: `SELECT i.*,p.medical_record_no,CONCAT(p.first_name,' ',p.last_name) patient_name,
+      COALESCE((SELECT SUM(amount) FROM payments x WHERE x.invoice_id=i.id),0) paid
+      FROM invoices i JOIN patients p ON p.id=i.patient_id`,
+    patient: 'patient_id', order: 'created_at DESC'
+  },
+  tasks: {
+    permission: 'tasks.manage',
+    sql: `SELECT t.*,u.display_name assigned_user_name FROM tasks t
+      LEFT JOIN users u ON u.id=t.assigned_user_id`,
+    patient: 'patient_id', department: 'department_id', ward: 'ward_id', assigned: 'assigned_user_id', order: 'created_at DESC'
+  },
+  vitals: {
+    permission: 'clinical.read',
+    sql: `SELECT v.*,u.display_name recorded_by_name FROM vitals v JOIN users u ON u.id=v.recorded_by`,
+    patient: 'patient_id', order: 'recorded_at DESC'
+  }
+};
+
+app.get('/api/worklists/:resource', param('resource').custom(value => Boolean(worklistDefinitions[value])), validate,
+  asyncRoute(async (req, res) => {
+    const def = worklistDefinitions[req.params.resource];
+    if (!req.user.is_central_owner && !req.user.permissions.has(def.permission)) {
+      return fail(res, 403, 'FORBIDDEN', 'Permission denied');
+    }
+    const { limit, offset } = pageArgs(req);
+    const status = req.query.status ? String(req.query.status).slice(0, 30) : null;
+    const patientId = req.query.patientId ? String(req.query.patientId) : null;
+    if (patientId && !/^[0-9a-f-]{36}$/i.test(patientId)) return fail(res, 422, 'INVALID_PATIENT', 'Invalid patient ID');
+    if (patientId && !await hasScope(req.user, 'patient', patientId)) return fail(res, 403, 'SCOPE_DENIED', 'Patient scope denied');
+    const filters = [];
+    const args = [];
+    if (status) {
+      filters.push(`${req.params.resource === 'labs' ? 'r' : req.params.resource === 'prescriptions' ? 'r' :
+        req.params.resource === 'tasks' ? 't' : req.params.resource === 'appointments' ? 'a' :
+        req.params.resource === 'encounters' ? 'e' : req.params.resource === 'admissions' ? 'a' :
+        req.params.resource === 'invoices' ? 'i' : 'v'}.status=?`);
+      args.push(status);
+    }
+    if (patientId && def.patient) {
+      const alias = req.params.resource === 'tasks' ? 't' : req.params.resource === 'appointments' ? 'a' :
+        req.params.resource === 'encounters' ? 'e' : req.params.resource === 'admissions' ? 'a' :
+        req.params.resource === 'invoices' ? 'i' : req.params.resource === 'vitals' ? 'v' : 'r';
+      filters.push(`${alias}.${def.patient}=?`);
+      args.push(patientId);
+    }
+    const [candidates] = await pool.query(
+      `${def.sql}${filters.length ? ` WHERE ${filters.join(' AND ')}` : ''}${def.group ? ` GROUP BY ${def.group}` : ''}
+       ORDER BY ${def.order} LIMIT 500`, args
+    );
+    const visible = [];
+    for (const row of candidates) {
+      const permitted = req.user.is_central_owner ||
+        (def.assigned && row[def.assigned] === req.user.id) ||
+        (def.patient && row[def.patient] && await hasScope(req.user, 'patient', row[def.patient])) ||
+        (def.ward && row[def.ward] && await hasScope(req.user, 'ward', row[def.ward])) ||
+        (def.department && row[def.department] && await hasScope(req.user, 'department', row[def.department]));
+      if (permitted) visible.push(row);
+    }
+    ok(res, visible.slice(offset, offset + limit), 200, { limit, offset, available: visible.length });
+  }));
+
 const catalogDefinitions = {
+  staff: { table: 'staff', fields: ['user_id','staff_no','first_name','last_name','phone','profession','license_no','department_id','active'], permission: 'admin.users' },
   departments: { table: 'departments', fields: ['code','name','active'], permission: 'admin.catalogs' },
   wards: { table: 'wards', fields: ['department_id','code','name','active'], permission: 'admin.catalogs' },
   units: { table: 'units', fields: ['ward_id','code','name'], permission: 'admin.catalogs' },
@@ -1532,6 +1630,46 @@ app.post('/api/admin/roles', requirePermission('admin.users'), [
     return roleId;
   });
   ok(res, { id: roleId }, 201);
+}));
+
+app.get('/api/templates', requirePermission('admin.catalogs'), asyncRoute(async (_req, res) => {
+  const [rows] = await pool.query('SELECT id,code,type,name,body,active,updated_at FROM templates ORDER BY type,name');
+  rows.forEach(row => { row.body = parseJson(row.body); });
+  ok(res, rows);
+}));
+app.post('/api/templates', requirePermission('admin.catalogs'), [
+  body('code').matches(/^[A-Za-z0-9_.-]{2,80}$/), body('type').trim().isLength({ min: 1, max: 60 }),
+  body('name').trim().isLength({ min: 1, max: 160 }), body('body').isObject(), validate
+], asyncRoute(async (req, res) => {
+  const templateId = id();
+  await pool.execute(
+    'INSERT INTO templates(id,code,type,name,body,active,created_by) VALUES(?,?,?,?,?,?,?)',
+    [templateId, req.body.code, req.body.type, req.body.name, json(req.body.body), req.body.active !== false, req.user.id]
+  );
+  await audit(req, 'template.create', 'template', templateId, null, null, req.body);
+  ok(res, { id: templateId }, 201);
+}));
+
+app.get('/api/backups', centralOnly, asyncRoute(async (_req, res) => {
+  const [rows] = await pool.query(
+    'SELECT id,storage_location,checksum_sha256,size_bytes,status,started_at,completed_at,metadata FROM backup_metadata ORDER BY started_at DESC LIMIT 200'
+  );
+  rows.forEach(row => { row.metadata = parseJson(row.metadata); });
+  ok(res, rows);
+}));
+app.post('/api/backups/metadata', centralOnly, [
+  body('storageLocation').trim().isLength({ min: 1, max: 500 }),
+  body('status').isIn(['started','completed','failed','verified']), validate
+], asyncRoute(async (req, res) => {
+  const backupId = id();
+  await pool.execute(
+    `INSERT INTO backup_metadata(id,storage_location,checksum_sha256,size_bytes,status,started_at,completed_at,initiated_by,metadata)
+     VALUES(?,?,?,?,?,COALESCE(?,NOW()),?,?,?)`,
+    [backupId, req.body.storageLocation, req.body.checksumSha256 || null, req.body.sizeBytes || null,
+      req.body.status, req.body.startedAt || null, req.body.completedAt || null, req.user.id, json(req.body.metadata)]
+  );
+  await audit(req, 'backup.metadata', 'backup', backupId, null, null, { status: req.body.status });
+  ok(res, { id: backupId }, 201);
 }));
 
 app.get('/api/settings', centralOnly, asyncRoute(async (_req, res) => {
