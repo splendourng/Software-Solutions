@@ -1205,7 +1205,7 @@ app.patch('/api/tasks/:id/status', requirePermission('tasks.manage'), [
     (task.department_id && await hasScope(req.user, 'department', task.department_id));
   if (!scoped && !req.user.is_central_owner) return fail(res, 403, 'SCOPE_DENIED', 'Task scope denied');
   await pool.execute(
-    'UPDATE tasks SET status=?,completed_at=IF(?="completed",NOW(),NULL) WHERE id=?',
+    "UPDATE tasks SET status=?,completed_at=IF(?='completed',NOW(),NULL) WHERE id=?",
     [req.body.status, req.body.status, req.params.id]
   );
   await audit(req, 'task.status', 'task', req.params.id, task.patient_id, task, { status: req.body.status });
@@ -1441,16 +1441,16 @@ const worklistDefinitions = {
   labs: {
     permission: 'labs.manage',
     sql: `SELECT r.*,p.medical_record_no,CONCAT(p.first_name,' ',p.last_name) patient_name,
-      COUNT(i.id) item_count FROM lab_requests r JOIN patients p ON p.id=r.patient_id
-      LEFT JOIN lab_request_items i ON i.request_id=r.id`,
-    patient: 'patient_id', group: 'r.id', order: 'ordered_at DESC'
+      (SELECT COUNT(*) FROM lab_request_items i WHERE i.request_id=r.id) item_count
+      FROM lab_requests r JOIN patients p ON p.id=r.patient_id`,
+    patient: 'patient_id', order: 'ordered_at DESC'
   },
   prescriptions: {
     permission: 'pharmacy.manage',
     sql: `SELECT r.*,p.medical_record_no,CONCAT(p.first_name,' ',p.last_name) patient_name,
-      COUNT(i.id) item_count FROM prescriptions r JOIN patients p ON p.id=r.patient_id
-      LEFT JOIN prescription_items i ON i.prescription_id=r.id`,
-    patient: 'patient_id', group: 'r.id', order: 'prescribed_at DESC'
+      (SELECT COUNT(*) FROM prescription_items i WHERE i.prescription_id=r.id) item_count
+      FROM prescriptions r JOIN patients p ON p.id=r.patient_id`,
+    patient: 'patient_id', order: 'prescribed_at DESC'
   },
   invoices: {
     permission: 'billing.manage',
@@ -1481,6 +1481,7 @@ app.get('/api/worklists/:resource', param('resource').custom(value => Boolean(wo
     const { limit, offset } = pageArgs(req);
     const status = req.query.status ? String(req.query.status).slice(0, 30) : null;
     const patientId = req.query.patientId ? String(req.query.patientId) : null;
+    if (status && req.params.resource === 'vitals') return fail(res, 422, 'INVALID_FILTER', 'Vitals do not have a status');
     if (patientId && !/^[0-9a-f-]{36}$/i.test(patientId)) return fail(res, 422, 'INVALID_PATIENT', 'Invalid patient ID');
     if (patientId && !await hasScope(req.user, 'patient', patientId)) return fail(res, 403, 'SCOPE_DENIED', 'Patient scope denied');
     const filters = [];
@@ -1792,8 +1793,9 @@ app.get('/api/patient-cards/:id.pdf', requirePermission('patients.read'), param(
 app.use((req, res) => fail(res, 404, 'ROUTE_NOT_FOUND', 'Route not found'));
 app.use((error, req, res, _next) => {
   if (res.headersSent) return req.socket.destroy();
-  const status = error.status || (error.code === 'ER_DUP_ENTRY' ? 409 : error.code === 'ER_NO_REFERENCED_ROW_2' ? 422 : 500);
-  const code = error.code === 'ER_DUP_ENTRY' ? 'CONFLICT' :
+  const status = error.status || (error instanceof multer.MulterError ? 413 :
+    error.code === 'ER_DUP_ENTRY' ? 409 : error.code === 'ER_NO_REFERENCED_ROW_2' ? 422 : 500);
+  const code = error instanceof multer.MulterError ? 'UPLOAD_REJECTED' : error.code === 'ER_DUP_ENTRY' ? 'CONFLICT' :
     error.code === 'ER_NO_REFERENCED_ROW_2' ? 'INVALID_REFERENCE' : error.code || 'INTERNAL_ERROR';
   if (status >= 500) {
     console.error(`[${req.requestId}]`, error);
